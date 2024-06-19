@@ -18,17 +18,22 @@ import jakarta.servlet.http.HttpSession;
 @WebServlet("/todo/*")
 public class TodoController extends HttpServlet {
 
-	// 코드 추가
 	private TodoDAO todoDAO;
 
 	/**
-	 * 생성될 때 최조 한번 수행 init()
+	 * 서블릿이 초기화될 때 한 번 실행됨. 여기서 TodoDAO 인스턴스를 초기화.
 	 */
 	@Override
 	public void init() throws ServletException {
 		this.todoDAO = new TodoDAOImpl();
 	}
 
+	/**
+	 * GET 요청을 처리하는 메서드.
+	 * 
+	 * @param request  HttpServletRequest 객체.
+	 * @param response HttpServletResponse 객체.
+	 */
 	@Override
 	protected void doGet(HttpServletRequest request, HttpServletResponse response)
 			throws ServletException, IOException {
@@ -37,7 +42,7 @@ public class TodoController extends HttpServlet {
 
 		switch (action) {
 		case "/form":
-			todoFromPage(request, response);
+			todoFormPage(request, response);
 			break;
 		case "/list":
 			todoListPage(request, response);
@@ -51,15 +56,30 @@ public class TodoController extends HttpServlet {
 		}
 	}
 
+	/**
+	 * 특정 할 일의 세부 정보를 가져오는 메서드.
+	 * 
+	 * @param request  HttpServletRequest 객체.
+	 * @param response HttpServletResponse 객체.
+	 * @throws ServletException
+	 * @throws IOException
+	 */
 	private void getTodoDetail(HttpServletRequest request, HttpServletResponse response)
 			throws ServletException, IOException {
 		int id = Integer.parseInt(request.getParameter("id"));
-
 		TodoDTO todo = todoDAO.getTodoById(id);
 		request.setAttribute("todo", todo);
 		request.getRequestDispatcher("/WEB-INF/todo/todoDetail.jsp").forward(request, response);
 	}
 
+	/**
+	 * 특정 할 일을 삭제하는 메서드.
+	 * 
+	 * @param request  HttpServletRequest 객체.
+	 * @param response HttpServletResponse 객체.
+	 * @throws ServletException
+	 * @throws IOException
+	 */
 	private void deleteTodo(HttpServletRequest request, HttpServletResponse response)
 			throws ServletException, IOException {
 		HttpSession session = request.getSession();
@@ -75,6 +95,14 @@ public class TodoController extends HttpServlet {
 		response.sendRedirect("list");
 	}
 
+	/**
+	 * 할 일 목록 페이지로 이동하는 메서드.
+	 * 
+	 * @param request  HttpServletRequest 객체.
+	 * @param response HttpServletResponse 객체.
+	 * @throws ServletException
+	 * @throws IOException
+	 */
 	private void todoListPage(HttpServletRequest request, HttpServletResponse response)
 			throws IOException, ServletException {
 		// 세션에서 principal 객체를 가져옴
@@ -88,18 +116,26 @@ public class TodoController extends HttpServlet {
 
 		List<TodoDTO> todos = todoDAO.getTodosByUserId(principal.getId());
 		request.setAttribute("todos", todos);
-		// todoForm.jsp 페이지로 요청 전달
+		// todoList.jsp 페이지로 요청 전달
 		request.getRequestDispatcher("/WEB-INF/todo/todoList.jsp").forward(request, response);
 	}
 
-	private void todoFromPage(HttpServletRequest request, HttpServletResponse response)
+	/**
+	 * 할 일 작성 페이지로 이동하는 메서드.
+	 * 
+	 * @param request  HttpServletRequest 객체.
+	 * @param response HttpServletResponse 객체.
+	 * @throws ServletException
+	 * @throws IOException
+	 */
+	private void todoFormPage(HttpServletRequest request, HttpServletResponse response)
 			throws ServletException, IOException {
 
 		// 세션에서 principal 객체를 가져옴
 		HttpSession session = request.getSession();
 		UserDTO principal = (UserDTO) session.getAttribute("principal");
 
-		// 현재 웹 애플리케이션의 컨텍스트 경로(Context Path)를 반환, 즉 context root 를 의미 한다.
+		// 현재 웹 애플리케이션의 컨텍스트 경로(Context Path)를 반환, 즉 context root를 의미.
 		System.out.println("getContextPath : " + request.getContextPath());
 		// 인증 검사
 		if (principal == null) {
@@ -110,6 +146,14 @@ public class TodoController extends HttpServlet {
 		request.getRequestDispatcher("/WEB-INF/todo/todoForm.jsp").forward(request, response);
 	}
 
+	/**
+	 * POST 요청을 처리하는 메서드.
+	 * 
+	 * @param request  HttpServletRequest 객체.
+	 * @param response HttpServletResponse 객체.
+	 * @throws ServletException
+	 * @throws IOException
+	 */
 	@Override
 	protected void doPost(HttpServletRequest request, HttpServletResponse response)
 			throws ServletException, IOException {
@@ -118,7 +162,7 @@ public class TodoController extends HttpServlet {
 		HttpSession session = request.getSession();
 		UserDTO user = (UserDTO) session.getAttribute("principal");
 		if (user == null) {
-			response.sendRedirect(request.getContextPath() + "/user/singIn");
+			response.sendRedirect(request.getContextPath() + "/user/signIn");
 			return;
 		}
 		String action = request.getPathInfo();
@@ -138,6 +182,14 @@ public class TodoController extends HttpServlet {
 		}
 	}
 
+	/**
+	 * 할 일을 업데이트하는 메서드.
+	 * 
+	 * @param request  HttpServletRequest 객체.
+	 * @param response HttpServletResponse 객체.
+	 * @throws ServletException
+	 * @throws IOException
+	 */
 	private void updateTodo(HttpServletRequest request, HttpServletResponse response)
 			throws ServletException, IOException {
 		int id = Integer.parseInt(request.getParameter("id"));
@@ -160,16 +212,20 @@ public class TodoController extends HttpServlet {
 		response.sendRedirect("list");
 	}
 
+	/**
+	 * 새로운 할 일을 추가하는 메서드.
+	 * 
+	 * @param request  HttpServletRequest 객체.
+	 * @param response HttpServletResponse 객체.
+	 * @throws IOException
+	 */
 	private void addTodo(HttpServletRequest request, HttpServletResponse response) throws IOException {
-		// 인증검사 먼저일까 유효성 먼저 검사 일까?
-
-		// HTTP 요청 메세지 Body 에서 값 추출
+		// HTTP 요청 메시지 Body에서 값 추출
 		String title = request.getParameter("title");
 		String description = request.getParameter("description");
 		String dueDateStr = request.getParameter("dueDate");
 
-		// checkBox 값 받아내기 - 실수 하는 부분들
-		// 체크박스가 선택되지 않으면 null 을 반환하고 체크가 되어 있다면 on 문자열을 반환 한다.
+		// 체크박스 값 받아내기 - 체크박스가 선택되지 않으면 null을 반환하고 체크가 되어 있다면 "on" 문자열을 반환함.
 		boolean completed = "on".equalsIgnoreCase(request.getParameter("completed"));
 		System.out.println("completed " + completed);
 

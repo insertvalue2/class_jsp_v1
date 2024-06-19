@@ -14,132 +14,176 @@ import jakarta.servlet.http.HttpServletResponse;
 import jakarta.servlet.http.HttpSession;
 
 /**
- * 회원과 관련된 요청이 들어 올 경우 처리 MVC 패턴에서 컨트롤러의 주요 목적이 뭘까?
+ * 이번 학습에 핵심 내용 
+ * 
+ * 회원과 관련된 요청을 처리하는 컨트롤러
+ * MVC 패턴에서 컨트롤러의 주요 목적: 
+ * 요청을 처리하고, 유효성 검사, 인증 검사 등을 수행하며, 
+ * 필요한 경우 모델과 상호작용하고 뷰로 데이터를 전달한다. 
  */
-// http://localhost:8080/user/xxx 로 들어오는 요청 처리 
 @WebServlet("/user/*")
 public class UserController extends HttpServlet {
 
-	// 여러 사용자가 사용하는 인스턴스 (static 으로 설계 하면 안됨 - 전역 금지 x)
-	private UserDAO userDAO = new UserDAOImpl();
-	
-	/**
-	 * 회원 가입 페이지 - http://localhost:8080/mvc/user/signUp
-	 * 로그인 페이지 - http://localhost:8080/mvc/user/singIn
-	 */
-	@Override
-	protected void doGet(HttpServletRequest request, HttpServletResponse response)
-			throws ServletException, IOException {
-		String action = request.getPathInfo();
-		System.out.println("GET 요청 action : " + action);
-		switch (action) {
-		case "/signIn":
-			request.getRequestDispatcher("/WEB-INF/user/signIn.jsp").forward(request, response);
-			break;
-		case "/signUp":
-			request.getRequestDispatcher("/WEB-INF/user/signUp.jsp").forward(request, response);
-			break;
-		default:
-			response.sendError(HttpServletResponse.SC_NOT_FOUND);
-			break;
-		}
-	}
+    // 여러 사용자가 사용하는 인스턴스 (static으로 설계하면 안됨 - 전역 금지)
+    private UserDAO userDAO = new UserDAOImpl();
+    
+    /**
+     * 회원 가입 페이지 - http://localhost:8080/mvc/user/signUp
+     * 로그인 페이지 - http://localhost:8080/mvc/user/signIn
+     */
+    @Override
+    protected void doGet(HttpServletRequest request, HttpServletResponse response)
+            throws ServletException, IOException {
+        String action = request.getPathInfo();
+        System.out.println("GET 요청 action : " + action);
+        switch (action) {
+            case "/signIn":
+                forwardToPage(request, response, "/WEB-INF/user/signIn.jsp");
+                break;
+            case "/signUp":
+                forwardToPage(request, response, "/WEB-INF/user/signUp.jsp");
+                break;
+            default:
+                response.sendError(HttpServletResponse.SC_NOT_FOUND);
+                break;
+        }
+    }
 
-	@Override
-	protected void doPost(HttpServletRequest request, HttpServletResponse response)
-			throws ServletException, IOException {
+    @Override
+    protected void doPost(HttpServletRequest request, HttpServletResponse response)
+            throws ServletException, IOException {
+        String action = request.getPathInfo();
+        System.out.println("POST 요청 action : " + action);
+        
+        switch (action) {
+            case "/signUp":
+                signUp(request, response);
+                break;
+            case "/signIn":
+                signIn(request, response);
+                break;
+            default:
+                response.sendError(HttpServletResponse.SC_NOT_FOUND);
+                break;
+        }
+    }
 
-		String action = request.getPathInfo();
-		System.out.println("POST 요청 action : " + action);
-		
-		switch (action) {
-		case "/signUp":
-			signUp(request, response);
-			break;
-		case "/signIn":
-			signIn(request, response);
-			break;
-		default:
-			response.sendError(HttpServletResponse.SC_NOT_FOUND);
-			break;
-		}
-	}
+    /**
+     * 회원 가입 처리
+     * 
+     * @param request
+     * @param response
+     * @throws ServletException
+     * @throws IOException
+     */
+    private void signUp(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
+        String username = request.getParameter("username");
+        String password = request.getParameter("password");
+        String email = request.getParameter("email");
 
-	/**
-	 * 회원 가입 처리
-	 * 
-	 * @param request
-	 * @param response
-	 * @throws ServletException
-	 * @throws IOException
-	 */
-	private void signUp(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
+        // 방어적 코드 작성: 입력 값 유효성 검사
+        if (isInvalid(username)) {
+            setErrorMessageAndForward(request, response, "Username is required.", "/WEB-INF/user/signUp.jsp");
+            return;
+        }
 
-		String username = request.getParameter("username");
-		String password = request.getParameter("password");
-		String email = request.getParameter("email");
+        if (isInvalid(password)) {
+            setErrorMessageAndForward(request, response, "Password is required.", "/WEB-INF/user/signUp.jsp");
+            return;
+        }
 
-		
-		// 방어적 코드 작성
-		if (username == null || username.trim().isEmpty()) {
-			request.setAttribute("errorMessage", "Username is required.");
-			request.getRequestDispatcher("/WEB-INF/user/signUp.jsp").forward(request, response);
-			return;
-		}
-		// getRequestDispatcher란?
-		// 다른 자원(JSP 페이지, 서블릿 등)으로 요청을 전달하거나 포함하기 위해 사용됩니다.
-		// forward 메서드
-		// 클라이언트로부터 받은 요청을 지정된 자원으로 내부 전달하고, 
-		// 클라이언트는 요청이 다른 자원으로 전달되었는지 알 수 없음.
-		if (password == null || password.trim().isEmpty()) {
-			request.setAttribute("errorMessage", "Password is required.");
-			request.getRequestDispatcher("/WEB-INF/user/signUp.jsp").forward(request, response);
-			return;
-		}
+        if (isInvalid(email)) {
+            setErrorMessageAndForward(request, response, "Email is required.", "/WEB-INF/user/signUp.jsp");
+            return;
+        }
 
-		if (email == null || email.trim().isEmpty()) {
-			request.setAttribute("errorMessage", "Email is required.");
-			request.getRequestDispatcher("/WEB-INF/user/signUp.jsp").forward(request, response);
-			return;
-		}
-		// 이메일 형식 (정규 표현식 사용 가능) 
-		
-		UserDTO user = new UserDTO();
-		user.setUsername(username);
-		user.setPassword(password);
-		user.setEmail(email);
-		
-		System.out.println(user.toString());
-		userDAO.addUser(user);
-		// URL 요청 이다. (내부 이동 아님, 확장자 x) - 상대 경로 설정  
-		response.sendRedirect("signIn");
-	}
+        // 이메일 형식 유효성 검사
+//        if (!email.matches("^[A-Za-z0-9+_.-]+@[A-Za-z0-9.-]+$")) {
+//            setErrorMessageAndForward(request, response, "Invalid email format.", "/WEB-INF/user/signUp.jsp");
+//            return;
+//        }
 
-	/**
-	 * 로그인 처리 로그인은 자원에 요청이지만 예외 (보안)
-	 * 
-	 * @param request
-	 * @param response
-	 * @throws ServletException
-	 * @throws IOException
-	 * 
-	 */
-	private void signIn(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
-		String username = request.getParameter("username");
-		String password = request.getParameter("password");
+        // UserDTO 객체 생성 및 데이터 설정
+        UserDTO user = new UserDTO();
+        user.setUsername(username);
+        user.setPassword(password);
+        user.setEmail(email);
 
-		UserDTO user = userDAO.getUserByUsername(username);
+        // 디버깅을 위한 출력
+        System.out.println(user.toString());
+        // 사용자 추가
+        userDAO.addUser(user);
+        // 로그인 페이지로 리다이렉트
+        response.sendRedirect("signIn");
+    }
 
-		if (user != null && user.getPassword().equals(password)) {
-			HttpSession session = request.getSession();
-			// 시스템에 접근하는 주체를 나타내는 개념으로, 
-			// 보안 컨텍스트에서 인증된 사용자나 서비스 계정을 의미한다.
-			session.setAttribute("principal", user);
-			// todo 만들 예정  
-			response.sendRedirect("../todo/form");
-		} else {
-			// 새로은 요청 URL 로 처리 (클라이언트로 가서 새로운 req,res 생성 된다) 
-			response.sendRedirect("signIn?error=invalid");
-		}
-	}
+    /**
+     * 로그인 처리
+     * 로그인은 자원에 요청이지만 보안을 위해 예외 처리
+     * 
+     * @param request
+     * @param response
+     * @throws ServletException
+     * @throws IOException
+     */
+    private void signIn(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
+        String username = request.getParameter("username");
+        String password = request.getParameter("password");
+
+        // 데이터베이스에서 사용자 조회
+        UserDTO user = userDAO.getUserByUsername(username);
+
+        // 사용자 인증
+        if (user != null && user.getPassword().equals(password)) {
+            // 세션에 사용자 정보 저장
+            HttpSession session = request.getSession();
+            session.setAttribute("principal", user);
+            
+            // todo 페이지로 리다이렉트
+            response.sendRedirect("../todo/form");
+        } else {
+            // 인증 실패 시 로그인 페이지로 리다이렉트
+            response.sendRedirect("signIn?error=invalid");
+        }
+    }
+
+    /**
+     * 입력 값이 유효하지 않은지 확인하는 메서드
+     * 
+     * @param value
+     * @return true if the value is null or empty
+     */
+    private boolean isInvalid(String value) {
+        return value == null || value.trim().isEmpty();
+    }
+
+    /**
+     * 에러 메시지를 설정하고 지정된 페이지로 요청을 전달하는 메서드
+     * 
+     * @param request
+     * @param response
+     * @param errorMessage
+     * @param page
+     * @throws ServletException
+     * @throws IOException
+     */
+    private void setErrorMessageAndForward(HttpServletRequest request, HttpServletResponse response, String errorMessage, String page) 
+            throws ServletException, IOException {
+        request.setAttribute("errorMessage", errorMessage);
+        request.getRequestDispatcher(page).forward(request, response);
+    }
+
+    /**
+     * 지정된 페이지로 요청을 전달하는 메서드
+     * 
+     * @param request
+     * @param response
+     * @param page
+     * @throws ServletException
+     * @throws IOException
+     */
+    private void forwardToPage(HttpServletRequest request, HttpServletResponse response, String page) 
+            throws ServletException, IOException {
+        request.getRequestDispatcher(page).forward(request, response);
+    }
 }
