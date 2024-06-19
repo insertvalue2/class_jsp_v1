@@ -32,8 +32,8 @@
                 <td><%= todo.getDueDate() %></td>
                 <td><%= todo.isCompleted() ? "완료" : "미완료" %></td>
                 <td>
-                    <a href="todo/detail?id=<%= todo.getId() %>">상세 보기</a>
-                    <form action="todo/delete" method="post" style="display:inline;">
+                    <a href="detail?id=<%= todo.getId() %>">상세 보기</a>
+                    <form action="delete" method="post" style="display:inline;">
                         <input type="hidden" name="id" value="<%= todo.getId() %>">
                         <button type="submit">삭제</button>
                     </form>

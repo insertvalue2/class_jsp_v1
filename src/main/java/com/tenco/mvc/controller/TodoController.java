@@ -34,7 +34,7 @@ public class TodoController extends HttpServlet {
 			throws ServletException, IOException {
 		String action = request.getPathInfo();
 		System.out.println("GET todo : " + action);
-		
+
 		switch (action) {
 		case "/form":
 			todoFromPage(request, response);
@@ -42,13 +42,41 @@ public class TodoController extends HttpServlet {
 		case "/list":
 			todoListPage(request, response);
 			break;
+		case "/detail":
+			getTodoDetail(request, response);
+			break;
 		default:
 			response.sendError(HttpServletResponse.SC_NOT_FOUND);
 			break;
 		}
 	}
 
-	private void todoListPage(HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException {
+	private void getTodoDetail(HttpServletRequest request, HttpServletResponse response)
+			throws ServletException, IOException {
+		int id = Integer.parseInt(request.getParameter("id"));
+
+		TodoDTO todo = todoDAO.getTodoById(id);
+		request.setAttribute("todo", todo);
+		request.getRequestDispatcher("/WEB-INF/todo/todoDetail.jsp").forward(request, response);
+	}
+
+	private void deleteTodo(HttpServletRequest request, HttpServletResponse response)
+			throws ServletException, IOException {
+		HttpSession session = request.getSession();
+		UserDTO principal = (UserDTO) session.getAttribute("principal");
+		// 인증 검사
+		if (principal == null) {
+			response.sendRedirect(request.getContextPath() + "/user/signIn?error=invalid");
+			return;
+		}
+		int todoId = Integer.parseInt(request.getParameter("id"));
+		todoDAO.deleteTodo(principal.getId(), todoId);
+		System.out.println("todoID : " + todoId);
+		response.sendRedirect("list");
+	}
+
+	private void todoListPage(HttpServletRequest request, HttpServletResponse response)
+			throws IOException, ServletException {
 		// 세션에서 principal 객체를 가져옴
 		HttpSession session = request.getSession();
 		UserDTO principal = (UserDTO) session.getAttribute("principal");
@@ -57,7 +85,7 @@ public class TodoController extends HttpServlet {
 			response.sendRedirect(request.getContextPath() + "/user/signIn?error=invalid");
 			return;
 		}
-		
+
 		List<TodoDTO> todos = todoDAO.getTodosByUserId(principal.getId());
 		request.setAttribute("todos", todos);
 		// todoForm.jsp 페이지로 요청 전달
@@ -98,10 +126,38 @@ public class TodoController extends HttpServlet {
 		case "/add":
 			addTodo(request, response);
 			break;
+		case "/delete":
+			deleteTodo(request, response);
+			break;
+		case "/update":
+			updateTodo(request, response);
+			break;
 		default:
 			response.sendError(HttpServletResponse.SC_NOT_FOUND);
 			break;
 		}
+	}
+
+	private void updateTodo(HttpServletRequest request, HttpServletResponse response)
+			throws ServletException, IOException {
+		int id = Integer.parseInt(request.getParameter("id"));
+		String title = request.getParameter("title");
+		String description = request.getParameter("description");
+		String dueDateStr = request.getParameter("dueDate");
+		boolean completed = "on".equalsIgnoreCase(request.getParameter("completed"));
+
+		TodoDTO todo = new TodoDTO();
+		todo.setId(id);
+		todo.setTitle(title);
+		todo.setDescription(description);
+		todo.setDueDate(java.sql.Date.valueOf(dueDateStr));
+		todo.setCompleted(completed);
+
+		HttpSession session = request.getSession();
+		UserDTO principal = (UserDTO) session.getAttribute("principal");
+
+		todoDAO.updateTodo(principal.getId(), todo);
+		response.sendRedirect("list");
 	}
 
 	private void addTodo(HttpServletRequest request, HttpServletResponse response) throws IOException {
@@ -111,12 +167,12 @@ public class TodoController extends HttpServlet {
 		String title = request.getParameter("title");
 		String description = request.getParameter("description");
 		String dueDateStr = request.getParameter("dueDate");
-		
-		// checkBox 값 받아내기 - 실수 하는 부분들  
-		// 체크박스가 선택되지 않으면 null 을 반환하고 체크가 되어 있다면 on 문자열을 반환 한다.  
+
+		// checkBox 값 받아내기 - 실수 하는 부분들
+		// 체크박스가 선택되지 않으면 null 을 반환하고 체크가 되어 있다면 on 문자열을 반환 한다.
 		boolean completed = "on".equalsIgnoreCase(request.getParameter("completed"));
 		System.out.println("completed " + completed);
-		
+
 		HttpSession session = request.getSession();
 		UserDTO principal = (UserDTO) session.getAttribute("principal");
 
