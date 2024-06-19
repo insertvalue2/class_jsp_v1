@@ -11,19 +11,14 @@ import javax.naming.InitialContext;
 import javax.naming.NamingException;
 import javax.sql.DataSource;
 
-import jakarta.servlet.http.HttpServletRequest;
-import jakarta.servlet.http.HttpSession;
-
 public class TodoDAOImpl implements TodoDAO {
 
 	private DataSource dataSource;
-	private HttpServletRequest request;
 
-	public TodoDAOImpl(HttpServletRequest request) {
+	public TodoDAOImpl() {
 		try {
 			InitialContext ctx = new InitialContext();
 			dataSource = (DataSource) ctx.lookup("java:comp/env/jdbc/MyDB");
-			this.request = request;
 		} catch (NamingException e) {
 			e.printStackTrace();
 		}
@@ -31,12 +26,10 @@ public class TodoDAOImpl implements TodoDAO {
 
 	@Override
 	public void addTodo(TodoDTO todo) {
-		HttpSession session = request.getSession();
-		int userId = (int) session.getAttribute("userId");
 		String sql = "INSERT INTO todos (user_id, title, description, due_date, completed) VALUES (?, ?, ?, ?, ?)";
 		try (Connection connection = dataSource.getConnection();
 				PreparedStatement ps = connection.prepareStatement(sql)) {
-			ps.setInt(1, userId);
+			ps.setInt(1, todo.getUserId());
 			ps.setString(2, todo.getTitle());
 			ps.setString(3, todo.getDescription());
 			ps.setDate(4, new java.sql.Date(todo.getDueDate().getTime()));
@@ -120,9 +113,8 @@ public class TodoDAOImpl implements TodoDAO {
 	}
 
 	@Override
-	public void updateTodo(TodoDTO todo) {
-		HttpSession session = request.getSession();
-		int userId = (int) session.getAttribute("userId");
+	public void updateTodo(int principalId, TodoDTO todo) {
+		int userId = principalId;
 		String sql = "UPDATE todos SET title = ?, description = ?, due_date = ?, completed = ? WHERE id = ? AND user_id = ?";
 		try (Connection connection = dataSource.getConnection();
 				PreparedStatement ps = connection.prepareStatement(sql)) {
@@ -139,9 +131,9 @@ public class TodoDAOImpl implements TodoDAO {
 	}
 
 	@Override
-	public void deleteTodo(int id) {
-		HttpSession session = request.getSession();
-		int userId = (int) session.getAttribute("userId");
+	public void deleteTodo(int principalId, int id) {
+	
+		int userId = principalId;
 		String sql = "DELETE FROM todos WHERE id = ? AND user_id = ?";
 		try (Connection connection = dataSource.getConnection();
 				PreparedStatement ps = connection.prepareStatement(sql)) {

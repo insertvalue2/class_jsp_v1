@@ -22,7 +22,11 @@ public class UserController extends HttpServlet {
 
 	// 여러 사용자가 사용하는 인스턴스 (static 으로 설계 하면 안됨 - 전역 금지 x)
 	private UserDAO userDAO = new UserDAOImpl();
-
+	
+	/**
+	 * 회원 가입 페이지 - http://localhost:8080/mvc/user/signUp
+	 * 로그인 페이지 - http://localhost:8080/mvc/user/singIn
+	 */
 	@Override
 	protected void doGet(HttpServletRequest request, HttpServletResponse response)
 			throws ServletException, IOException {
@@ -82,7 +86,11 @@ public class UserController extends HttpServlet {
 			request.getRequestDispatcher("/WEB-INF/user/signUp.jsp").forward(request, response);
 			return;
 		}
-
+		// getRequestDispatcher란?
+		// 다른 자원(JSP 페이지, 서블릿 등)으로 요청을 전달하거나 포함하기 위해 사용됩니다.
+		// forward 메서드
+		// 클라이언트로부터 받은 요청을 지정된 자원으로 내부 전달하고, 
+		// 클라이언트는 요청이 다른 자원으로 전달되었는지 알 수 없음.
 		if (password == null || password.trim().isEmpty()) {
 			request.setAttribute("errorMessage", "Password is required.");
 			request.getRequestDispatcher("/WEB-INF/user/signUp.jsp").forward(request, response);
@@ -100,9 +108,11 @@ public class UserController extends HttpServlet {
 		user.setUsername(username);
 		user.setPassword(password);
 		user.setEmail(email);
-
+		
+		System.out.println(user.toString());
 		userDAO.addUser(user);
-		response.sendRedirect("/WEB-INF/user/signUp.jsp");
+		// URL 요청 이다. (내부 이동 아님, 확장자 x) - 상대 경로 설정  
+		response.sendRedirect("signIn");
 	}
 
 	/**
@@ -122,12 +132,14 @@ public class UserController extends HttpServlet {
 
 		if (user != null && user.getPassword().equals(password)) {
 			HttpSession session = request.getSession();
-			session.setAttribute("userId", user.getId());
-			// todo 만들 예정 (내부에서 이동) 
-			response.sendRedirect("/WEB-INF/todo/todoList.jsp");
+			// 시스템에 접근하는 주체를 나타내는 개념으로, 
+			// 보안 컨텍스트에서 인증된 사용자나 서비스 계정을 의미한다.
+			session.setAttribute("principal", user);
+			// todo 만들 예정  
+			response.sendRedirect("../todo/form");
 		} else {
 			// 새로은 요청 URL 로 처리 (클라이언트로 가서 새로운 req,res 생성 된다) 
-			response.sendRedirect("signUp.jsp?error=invalid");
+			response.sendRedirect("signIn?error=invalid");
 		}
 	}
 }

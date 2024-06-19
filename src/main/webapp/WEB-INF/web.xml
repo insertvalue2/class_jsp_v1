@@ -9,4 +9,24 @@
     <welcome-file>default.jsp</welcome-file>
     <welcome-file>default.htm</welcome-file>
   </welcome-file-list>
+  <servlet>
+    <description></description>
+    <display-name>TodoController</display-name>
+    <servlet-name>TodoController</servlet-name>
+    <servlet-class>com.tenco.mvc.controller.TodoController</servlet-class>
+  </servlet>
+  <servlet-mapping>
+    <servlet-name>TodoController</servlet-name>
+    <url-pattern>/TodoController</url-pattern>
+  </servlet-mapping>
+  <servlet>
+    <description></description>
+    <display-name>TodoEx</display-name>
+    <servlet-name>TodoEx</servlet-name>
+    <servlet-class>com.tenco.mvc.controller.TodoEx</servlet-class>
+  </servlet>
+  <servlet-mapping>
+    <servlet-name>TodoEx</servlet-name>
+    <url-pattern>/TodoEx</url-pattern>
+  </servlet-mapping>
 </web-app>
